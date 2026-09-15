@@ -109,7 +109,7 @@ Want to contribute or suggest improvements? Feel free to open an issue or submit
 
 ## 📈 Star History ⭐
 
-[![Star History Chart](https://api.star-history.com/svg?repos=ishandutta2007/generate-social-preview-gif&type=Date)](https://star-history.com/#ishandutta2007/generate-social-preview-gif&Date)
+[![Star History Chart](https://star-history.dera.page/svg?repos=ishandutta2007/generate-social-preview-gif&type=date&legend=top-left)](https://star-history.dera.page/#ishandutta2007/generate-social-preview-gif&type=date&legend=top-left)
 
 ---
 
