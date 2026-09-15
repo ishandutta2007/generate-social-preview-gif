@@ -101,6 +101,12 @@ The generator extracts design tokens from SVG files based on the following mappi
 
 ---
 
+## 🤝 Contributing & Repository Info 🌟
+
+Want to contribute or suggest improvements? Feel free to open an issue or submit a pull request for `generate-social-preview-gif`!
+
+---
+
 ## 📄 License 📜
 
 This project is licensed under the [MIT License](LICENSE) ⚖️.
