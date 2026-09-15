@@ -1,25 +1,76 @@
 const fs = require('fs');
 const path = require('path');
 
+// ---------------------------------------------------------------------------
+// SVG parser — extracts title, subtitle, accent colors from banner.svg
+// ---------------------------------------------------------------------------
+
+function parseBannerSVG(svgPath) {
+  const info = { title: null, subtitle: null, tagline: null };
+  if (!fs.existsSync(svgPath)) return info;
+  try {
+    const content = fs.readFileSync(svgPath, 'utf8');
+
+    // Title: class="title" or text containing "Awesome"
+    const titleMatch = content.match(/<text[^>]*class=["'][^"']*title[^"']*["'][^>]*>([\s\S]*?)<\/text>/);
+    const awesomeMatch = content.match(/<text[^>]*>([\s\S]*?Awesome[\s\S]*?)<\/text>/i);
+    if (titleMatch) {
+      info.title = titleMatch[1].replace(/<[^>]+>/g, '').replace(/&amp;/g, '&').trim();
+    } else if (awesomeMatch) {
+      info.title = awesomeMatch[1].replace(/<[^>]+>/g, '').replace(/&amp;/g, '&').trim();
+    }
+
+    // Subtitle
+    const subMatch = content.match(/<text[^>]*class=["'][^"']*(?:subtitle|desc)[^"']*["'][^>]*>([\s\S]*?)<\/text>/);
+    if (subMatch) {
+      info.subtitle = subMatch[1].replace(/<[^>]+>/g, '').replace(/&amp;/g, '&').trim();
+    }
+
+    // Tagline
+    const tagMatch = content.match(/<text[^>]*class=["'][^"']*tagline[^"']*["'][^>]*>([\s\S]*?)<\/text>/);
+    if (tagMatch) {
+      info.tagline = tagMatch[1].replace(/<[^>]+>/g, '').replace(/&amp;/g, '&').trim();
+    }
+
+    return info;
+  } catch (e) {
+    return info;
+  }
+}
+
+function getFallbackAppName() {
+  const cwdName = path.basename(process.cwd());
+  if (!cwdName) return 'Awesome Project';
+  const clean = cwdName.replace(/[-_]/g, ' ');
+  const words = clean.split(/\s+/).filter(Boolean);
+  if (words.length > 0 && words[0].toLowerCase() !== 'awesome') {
+    words.unshift('Awesome');
+  }
+  return words.map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+}
+
+// ---------------------------------------------------------------------------
+// GIF frame encoder (low-level pixel rendering)
+// ---------------------------------------------------------------------------
+
 function encodeFrame(width, height, delayCentisecs, t) {
   const pulseX = Math.round(50 + t * 540);
-  const opacity = 0.6 + 0.4 * Math.sin(t * Math.PI * 2);
 
   const palette = [
     13, 17, 23,     // 0: Dark bg (#0d1117)
     22, 27, 34,     // 1: Card bg (#161b22)
     28, 33, 40,     // 2: Card inner (#1c2128)
     48, 54, 61,     // 3: Border grey (#30363d)
-    255, 255, 255, // 4: White text (#ffffff)
-    88, 166, 255,  // 5: Blue title (#58a6ff)
-    139, 148, 158, // 6: Grey text (#8b949e)
-    255, 94, 98,   // 7: Red pulse (#ff5e62)
-    255, 153, 102, // 8: Orange gradient (#ff9966)
-    79, 172, 254,  // 9: Cyan accent (#4facfe)
-    126, 231, 135, // 10: Green badge (#7ee787)
-    121, 192, 255, // 11: Light blue badge (#79c0ff)
-    255, 166, 87,  // 12: Orange badge (#ffa657)
-    33, 38, 45     // 13: Badge fill (#21262d)
+    255, 255, 255,  // 4: White text (#ffffff)
+    88, 166, 255,   // 5: Blue title (#58a6ff)
+    139, 148, 158,  // 6: Grey text (#8b949e)
+    255, 94, 98,    // 7: Red pulse (#ff5e62)
+    255, 153, 102,  // 8: Orange gradient (#ff9966)
+    79, 172, 254,   // 9: Cyan accent (#4facfe)
+    126, 231, 135,  // 10: Green badge (#7ee787)
+    121, 192, 255,  // 11: Light blue badge (#79c0ff)
+    255, 166, 87,   // 12: Orange badge (#ffa657)
+    33, 38, 45      // 13: Badge fill (#21262d)
   ];
 
   while (palette.length < 256 * 3) {
@@ -100,6 +151,10 @@ function encodeFrame(width, height, delayCentisecs, t) {
   return { pixels, palette };
 }
 
+// ---------------------------------------------------------------------------
+// LZW encoder
+// ---------------------------------------------------------------------------
+
 function lzwEncode(width, height, pixels, minCodeSize) {
   const buf = [];
   let clearCode = 1 << minCodeSize;
@@ -174,11 +229,23 @@ function lzwEncode(width, height, pixels, minCodeSize) {
   return Buffer.from(subblocks);
 }
 
+// ---------------------------------------------------------------------------
+// Main GIF generator
+// ---------------------------------------------------------------------------
+
 function generateSocialPreviewGIF() {
   const width = 640;
   const height = 320;
   const numFrames = 12;
   const gifParts = [];
+
+  // Parse banner SVG for title
+  const svgPath = path.join(process.cwd(), 'assets', 'banner.svg');
+  const parsed = parseBannerSVG(svgPath);
+  const appName = parsed.title || getFallbackAppName();
+  console.log(`Node Generator using Title: "${appName}"`);
+  if (parsed.subtitle) console.log(`  Subtitle: "${parsed.subtitle}"`);
+  if (parsed.tagline) console.log(`  Tagline:  "${parsed.tagline}"`);
 
   gifParts.push(Buffer.from('GIF89a'));
 
