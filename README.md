@@ -6,9 +6,7 @@
 
 # 🎨✨ Animated GitHub Social Preview GIF Generator & Creative Automation Tool 🚀
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
-[![Node.js 16+](https://img.shields.io/badge/node-%3E%3D16.0.0-brightgreen.svg)](https://nodejs.org/)
+<a href="https://github.com/ishandutta2007/Awesome-Awesome-Awesome"><img src="https://img.shields.io/badge/Awesome-%E2%9C%94-blueviolet?style=flat-square&logo=github" alt="Awesome"/></a> <a href="https://discord.gg/jc4xtF58Ve"><img src="https://img.shields.io/badge/Discord-5865F2?style=for-the-badge&logo=discord&logoColor=white" alt="Discord" /></a> [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT) [![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/) [![Node.js 16+](https://img.shields.io/badge/node-%3E%3D16.0.0-brightgreen.svg)](https://nodejs.org/)
 
 An automated, high-fidelity **GitHub Social Preview GIF Generator** 🖼️ (`640x320px`, `< 1MB`, strictly padded 📐). This developer tool parses repository banner files (`assets/banner.svg`) to extract design parameters—typography 🔤, color palettes 🎨, gradients 🌈, glowing orbs 🔮, grid patterns 🌐, and diagram nodes 🔗—replicating your project's brand identity into an animated Open Graph preview GIF 🎬.
 
