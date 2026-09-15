@@ -25,8 +25,10 @@ def get_accent_color(t):
     else:
         return interpolate_color(c2, c3, (t - 0.5) / 0.5)
 
-def render_frame(frame_idx, total_frames, appname1, appname2, width=640, height=320):
+def render_frame(frame_idx, total_frames, appname1, appname2, svg_info=None, width=640, height=320):
     t = frame_idx / total_frames
+    if svg_info is None:
+        svg_info = {}
     
     # 1. Base Image - Dark GitHub background #0d1117
     img = Image.new("RGBA", (width, height), (13, 17, 23, 255))
@@ -88,21 +90,28 @@ def render_frame(frame_idx, total_frames, appname1, appname2, width=640, height=
         font_title = font_subtitle = font_desc = font_badge = ImageFont.load_default()
     
     text_x = 95
-    # Title: Awesome My App
+    # Title (first line)
     draw.text((text_x, 72), appname1, font=font_title, fill=(255, 255, 255, 255))
     
-    # Subtitle: MANAGEMENT (PSM) ECOSYSTEM
+    # Title (second line)
     draw.text((text_x, 104), appname2, font=font_subtitle, fill=(88, 166, 255, 255))
     
-    # Description
-    draw.text((text_x, 128), "Curated SaaS Platforms, Risk Analysis Frameworks & Open-Source Tools", font=font_desc, fill=(139, 148, 158, 255))
+    # Subtitle / Description extracted from banner.svg if available
+    subtitle_text = svg_info.get("subtitle") or "Curated SaaS Platforms, Risk Analysis Frameworks & Open-Source Tools"
+    draw.text((text_x, 128), subtitle_text, font=font_desc, fill=(139, 148, 158, 255))
     
     # 4. Badges (y = 152 to 174)
-    badges = [
-        ("OSHA PSM 1910.119", (126, 231, 135)), # Green
-        ("HAZOP / PHA / QRA", (121, 192, 255)),  # Blue
-        ("EHS & Seveso III", (255, 166, 87)),   # Orange
-    ]
+    parsed_badges = svg_info.get("badges", [])
+    if parsed_badges:
+        badge_colors = [(126, 231, 135), (121, 192, 255), (255, 166, 87)]
+        badges = [(b, badge_colors[idx % len(badge_colors)]) for idx, b in enumerate(parsed_badges[:3])]
+    else:
+        badges = [
+            ("OSHA PSM 1910.119", (126, 231, 135)), # Green
+            ("HAZOP / PHA / QRA", (121, 192, 255)),  # Blue
+            ("EHS & Seveso III", (255, 166, 87)),   # Orange
+        ]
+        
     bx = text_x
     by = 152
     for label, col in badges:
@@ -111,21 +120,20 @@ def render_frame(frame_idx, total_frames, appname1, appname2, width=640, height=
         draw.text((bx + 8, by + 3), label, font=font_badge, fill=col)
         bx += bw + 10
         
-    # 5. Dynamic Wave with SMIL-equivalent oscillation (y around 208)
-    # The banner has:
-    # values="M 50 205 Q 250 185 450 205 T 850 205; M 50 205 Q 250 225 450 205 T 850 205; M 50 205 Q 250 185 450 205 T 850 205"
+    # 5. Dynamic Wave with oscillation (y around 212)
     wave_start_x = 35
     wave_end_x = width - 35
     wave_base_y = 212
+    amp = 11
+    if svg_info.get("wave_values"):
+        amp = 15 # Adjust amplitude slightly if custom animated wave detected
     
-    # Wave points
     wave_pts = []
     num_steps = 120
     for i in range(num_steps + 1):
         frac = i / num_steps
         wx = wave_start_x + frac * (wave_end_x - wave_start_x)
-        # Sine wave oscillating up and down with period 1.0 in t
-        wy = wave_base_y + 11 * math.sin(frac * 3.5 * math.pi + t * 2 * math.pi)
+        wy = wave_base_y + amp * math.sin(frac * 3.5 * math.pi + t * 2 * math.pi)
         wave_pts.append((wx, wy))
         
     # Draw wave segments with gradient colors
@@ -135,10 +143,9 @@ def render_frame(frame_idx, total_frames, appname1, appname2, width=640, height=
         draw.line([wave_pts[i], wave_pts[i + 1]], fill=col, width=3)
         
     # 6. Pulsing dynamic dot traveling across the wave
-    # Banner has: values="50;850;50" across 4s
     dot_frac = 0.5 * (1.0 - math.cos(t * 2 * math.pi))
     dot_x = wave_start_x + dot_frac * (wave_end_x - wave_start_x)
-    dot_y = wave_base_y + 11 * math.sin(dot_frac * 3.5 * math.pi + t * 2 * math.pi)
+    dot_y = wave_base_y + amp * math.sin(dot_frac * 3.5 * math.pi + t * 2 * math.pi)
     
     # Glow circle
     dot_color = (255, 94, 98, 255) # #ff5e62
@@ -158,6 +165,63 @@ def render_frame(frame_idx, total_frames, appname1, appname2, width=640, height=
     
     return bg
 
+def parse_banner_svg(svg_path):
+    """
+    Parses assets/banner.svg to extract appnamefull, description/subtitle,
+    badges/tags, and animation details if present.
+    """
+    info = {
+        "appnamefull": None,
+        "subtitle": None,
+        "badges": [],
+        "wave_values": None
+    }
+    if not os.path.exists(svg_path):
+        return info
+
+    try:
+        import xml.etree.ElementTree as ET
+        tree = ET.parse(svg_path)
+        root = tree.getroot()
+        
+        # Helper to recursively extract text elements and classes/styles
+        texts = []
+        for elem in root.iter():
+            tag = elem.tag.split('}')[-1]
+            if tag == 'text':
+                cls = elem.attrib.get('class', '')
+                t_content = "".join(elem.itertext()).strip()
+                if t_content:
+                    texts.append((cls, t_content))
+            elif tag == 'animate':
+                attr = elem.attrib.get('attributeName', '')
+                vals = elem.attrib.get('values', '')
+                if attr == 'd' and 'Q' in vals:
+                    info['wave_values'] = vals
+
+        # Extract appnamefull from title text element or first main header text element
+        title_texts = [t for cls, t in texts if 'title' in cls]
+        if title_texts:
+            info['appnamefull'] = title_texts[0]
+        else:
+            # Fallback: largest or first prominent text in SVG
+            if texts:
+                info['appnamefull'] = texts[0][1]
+
+        # Subtitle / description extraction
+        sub_texts = [t for cls, t in texts if 'subtitle' in cls or 'desc' in cls or 'tagline' in cls]
+        if sub_texts:
+            info['subtitle'] = sub_texts[0]
+
+        # Badges / feature pills extraction
+        badge_texts = [t for cls, t in texts if 'badge' in cls or 'node' in cls or 'pill' in cls]
+        if badge_texts:
+            info['badges'] = badge_texts
+    except Exception as e:
+        print(f"Warning: Failed to parse SVG metadata from {svg_path}: {e}")
+
+    return info
+
 def split_sentence_balanced(sentence):
     words = sentence.split()
     if not words:
@@ -169,13 +233,26 @@ def split_sentence_balanced(sentence):
     
     return first_half, second_half
 
-def generate_social_preview(output_path, appnamefull, num_frames=24, fps=12):
+def generate_social_preview(output_path, appnamefull=None, banner_svg_path=None, num_frames=24, fps=12):
+    if banner_svg_path is None:
+        # Default destination banner path: root of destination repo / working directory
+        banner_svg_path = os.path.join(os.getcwd(), "assets", "banner.svg")
+
+    svg_info = parse_banner_svg(banner_svg_path)
+    
+    # Priority: explicit argument -> parsed from banner.svg -> fallback default
+    if not appnamefull:
+        if svg_info["appnamefull"]:
+            appnamefull = svg_info["appnamefull"]
+        else:
+            appnamefull = "Awesome Project"
+
+    print(f"Using App Name: '{appnamefull}'")
     print(f"Generating {num_frames} frames for Social Preview GIF...")
     appname1, appname2 = split_sentence_balanced(appnamefull)
     frames = []
     for i in range(num_frames):
-        frame = render_frame(i, num_frames, appname1, appname2)
-        # ="Awesome My App", appname2="MANAGEMENT (PSM) ECOSYSTEM")
+        frame = render_frame(i, num_frames, appname1, appname2, svg_info=svg_info)
         # Quantize to 128 colors for high quality, small file size
         paletted = frame.quantize(colors=128, method=Image.Quantize.MEDIANCUT)
         frames.append(paletted)
@@ -203,8 +280,11 @@ def generate_social_preview(output_path, appnamefull, num_frames=24, fps=12):
         raise ValueError(f"Dimensions {frames[0].size} do not match strictly 640x320!")
 
 if __name__ == "__main__":
-    script_dir = os.path.dirname(os.path.abspath(__file__))
-    repo_root = os.path.abspath(os.path.join(script_dir, "..", "..", "..", ".."))
-    out_gif = os.path.join(repo_root, "assets", "preview.gif")
-    appnamefull="Awesome My App MANAGEMENT (PSM) ECOSYSTEM"
-    generate_social_preview(out_gif, appnamefull)
+    import sys
+    
+    # Allow optional CLI arguments: python generate_gif.py [banner_svg_path] [output_gif_path]
+    banner_svg_path = sys.argv[1] if len(sys.argv) > 1 else os.path.join(os.getcwd(), "assets", "banner.svg")
+    out_gif = sys.argv[2] if len(sys.argv) > 2 else os.path.join(os.getcwd(), "assets", "preview.gif")
+    
+    generate_social_preview(output_path=out_gif, banner_svg_path=banner_svg_path)
+

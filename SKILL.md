@@ -26,9 +26,12 @@ This skill provides an automated generator to create lightweight, high-fidelity 
 
 ## Usage
 
+The generator automatically parses `assets/banner.svg` in the destination repository to extract `appnamefull`, subtitle text, feature badges, and wave parameters for rendering.
+
 To regenerate `assets/preview.gif`, run:
 
 ```bash
-python C:/Users/ishan/.gemini/antigravity-cli/skills/generate-social-preview-gif/scripts/generate_gif.py
+python C:/Users/ishan/.gemini/antigravity-cli/skills/generate-social-preview-gif/scripts/generate_gif.py [path/to/assets/banner.svg] [path/to/assets/preview.gif]
 ```
+
 
