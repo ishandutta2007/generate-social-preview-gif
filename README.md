@@ -113,6 +113,17 @@ Want to contribute or suggest improvements? Feel free to open an issue or submit
 
 ---
 
+## 💖 Support & Sponsorship ☕
+
+Thank you for using and exploring **generate-social-preview-gif**! If you find this project helpful, please consider:
+- ⭐ **Starring** the repository to show your support.
+- 🔀 **Forking** it to customize or contribute back.
+- 📢 **Sharing** it with developers and team members who build open-source projects!
+
+If you'd like to support the ongoing maintenance and development, you can [Buy Me a Coffee / Sponsor on GitHub ☕](https://github.com/sponsors/ishandutta2007).
+
+---
+
 ## 📄 License 📜
 
 This project is licensed under the [MIT License](LICENSE) ⚖️.
